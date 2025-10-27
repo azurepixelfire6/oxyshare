@@ -3,157 +3,279 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Oxyshare — Automation Hub</title>
+<title>Oxyshare — Automation Builder</title>
 <style>
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
-    background: radial-gradient(circle at top, #0a0a0a 0%, #050505 100%);
+    background: #0a0a0a;
     color: #fff;
-    overflow-x: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    overflow: hidden;
   }
-
-  .app-container {
-    max-width: 420px;
-    margin: 40px auto;
-    border-radius: 40px;
-    background: rgba(30, 30, 30, 0.8);
-    backdrop-filter: blur(16px);
-    box-shadow: 0 0 20px rgba(255,255,255,0.05);
+  .sidebar {
+    width: 260px;
+    background: #111;
+    border-right: 1px solid #222;
     padding: 20px;
-    animation: fadeIn 1s ease;
+    overflow-y: auto;
   }
-
-  h1 {
-    text-align: center;
-    font-size: 2em;
-    letter-spacing: -0.02em;
-    margin-bottom: 20px;
-    background: linear-gradient(to right, #0ff, #0af);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+  .sidebar h2 {
+    font-size: 1.3em;
+    color: #00baff;
+    margin-bottom: 15px;
   }
-
-  button {
-    background: linear-gradient(135deg, #0ff, #0af);
-    border: none;
-    color: white;
-    padding: 14px 20px;
-    font-size: 16px;
-    border-radius: 16px;
-    margin: 10px 0;
-    width: 100%;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  button:hover {
-    transform: scale(1.03);
-    box-shadow: 0 0 15px #0af5;
-  }
-
-  .automation {
-    background: rgba(255,255,255,0.05);
-    border-radius: 16px;
-    padding: 15px;
-    margin: 10px 0;
-  }
-
-  input, textarea {
-    width: 100%;
-    background: rgba(255,255,255,0.1);
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-size: 14px;
+  .block-template {
+    background: #1c1c1c;
     padding: 10px;
-    margin-top: 5px;
+    border-radius: 10px;
     margin-bottom: 10px;
-    outline: none;
+    cursor: grab;
+    transition: 0.2s;
+    user-select: none;
   }
-
-  .footer {
-    text-align: center;
-    opacity: 0.6;
-    font-size: 0.8em;
-    margin-top: 20px;
+  .block-template:hover {
+    background: #242424;
   }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+  .workspace {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  .block {
+    background: #1b1b1b;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    padding: 10px;
+    transition: 0.2s;
+  }
+  .block input, .block select {
+    background: #111;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px;
+    margin-left: 5px;
+    width: 60%;
+  }
+  .header {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 50px;
+    background: #0d0d0d;
+    border-bottom: 1px solid #222;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+  }
+  .header button {
+    background: #00baff;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: 600;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .header button:hover {
+    opacity: 0.9;
+  }
+  .main {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    margin-top: 50px;
   }
 </style>
 </head>
 <body>
-  <div class="app-container">
-    <h1>Oxyshare</h1>
-    <p style="text-align:center;opacity:0.8;">Create • Share • Run Automations</p>
-
-    <div id="automations"></div>
-
-    <button onclick="createAutomation()">➕ Create Automation</button>
-
-    <div class="footer">© 2025 Oxysoft</div>
+  <div class="header">
+    <div>Oxyshare — Automation Builder</div>
+    <div>
+      <button onclick="runAutomation()">Run</button>
+      <button onclick="saveWorkflow()">Save</button>
+      <button onclick="loadWorkflow()">Load</button>
+      <button onclick="clearWorkspace()">Clear</button>
+    </div>
   </div>
 
-  <script>
-    const container = document.getElementById("automations");
-    let automations = JSON.parse(localStorage.getItem("oxy_automations") || "[]");
+  <div class="main">
+    <div class="sidebar">
+      <h2>Actions</h2>
+      <div id="templates"></div>
+    </div>
 
-    function save() {
-      localStorage.setItem("oxy_automations", JSON.stringify(automations));
-      render();
+    <div class="workspace" id="workspace">
+    </div>
+  </div>
+
+<script>
+const blockList = [
+  {type:"click", label:"Click screen [times]"},
+  {type:"notify", label:"Show notification [text]"},
+  {type:"wait", label:"Wait [seconds]"},
+  {type:"log", label:"Log text [text]"},
+  {type:"openurl", label:"Open URL [url]"},
+  {type:"download", label:"Download [url]"},
+  {type:"upload", label:"Upload file (saved as variable)"},
+  {type:"if", label:"If condition [text]"},
+  {type:"else", label:"Else"},
+  {type:"loop", label:"Repeat [times]"},
+  {type:"input", label:"Ask for input [prompt]"},
+  {type:"sound", label:"Play beep sound"},
+  {type:"vibrate", label:"Vibrate device [ms]"},
+  {type:"bgcolor", label:"Change background [color]"},
+  {type:"alert", label:"Show alert [text]"},
+  {type:"confirm", label:"Ask confirm [text]"},
+  {type:"time", label:"Show current time"},
+  {type:"date", label:"Show current date"},
+  {type:"console", label:"Open console log"},
+  {type:"variable", label:"Set variable [name]=[value]"}
+];
+
+const templates = document.getElementById("templates");
+const workspace = document.getElementById("workspace");
+
+blockList.forEach(b=>{
+  const el=document.createElement("div");
+  el.className="block-template";
+  el.textContent=b.label;
+  el.draggable=true;
+  el.dataset.type=b.type;
+  el.ondragstart=e=>e.dataTransfer.setData("type", b.type);
+  templates.appendChild(el);
+});
+
+workspace.ondragover=e=>e.preventDefault();
+workspace.ondrop=e=>{
+  e.preventDefault();
+  const type=e.dataTransfer.getData("type");
+  addBlock(type);
+};
+
+function addBlock(type,val="") {
+  const def = blockList.find(b=>b.type===type);
+  const div=document.createElement("div");
+  div.className="block";
+  div.dataset.type=type;
+  const input = `<input type="text" value="${val}">`;
+  div.innerHTML = def.label.replace("[text]", input).replace("[times]", input).replace("[seconds]", input).replace("[url]", input).replace("[color]", input).replace("[name]", input).replace("[value]", input).replace("[prompt]", input).replace("[ms]", input);
+  workspace.appendChild(div);
+}
+
+function runAutomation() {
+  const blocks = workspace.querySelectorAll(".block");
+  let vars = {};
+  let i=0;
+
+  async function executeNext() {
+    if (i >= blocks.length) return;
+    const block = blocks[i];
+    const type = block.dataset.type;
+    const input = block.querySelector("input") ? block.querySelector("input").value : "";
+    switch(type){
+      case "click":
+        for(let j=0;j<(parseInt(input)||1);j++){ document.body.click(); }
+        break;
+      case "notify":
+        if (Notification.permission === "granted") new Notification(input);
+        else alert(input);
+        break;
+      case "wait":
+        await new Promise(r=>setTimeout(r,(parseFloat(input)||1)*1000));
+        break;
+      case "log":
+        console.log(input);
+        break;
+      case "openurl":
+        window.open(input, "_blank");
+        break;
+      case "download":
+        const a=document.createElement("a");
+        a.href=input;
+        a.download="file";
+        a.click();
+        break;
+      case "upload":
+        alert("Upload placeholder (variable saved)");
+        break;
+      case "if":
+        if(!eval(input)) while(blocks[++i] && blocks[i].dataset.type!=="else"){}
+        break;
+      case "else":
+        while(blocks[++i] && blocks[i].dataset.type!=="endif"){}
+        break;
+      case "loop":
+        let times=parseInt(input)||1;
+        const savedI=i;
+        for(let j=0;j<times;j++){
+          i=savedI;
+          await executeNext();
+        }
+        break;
+      case "input":
+        vars["input"]=prompt(input||"Enter value:");
+        break;
+      case "sound":
+        const ctx=new (window.AudioContext||window.webkitAudioContext)();
+        const osc=ctx.createOscillator();
+        osc.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime+0.2);
+        break;
+      case "vibrate":
+        navigator.vibrate(parseInt(input)||200);
+        break;
+      case "bgcolor":
+        document.body.style.background=input;
+        break;
+      case "alert":
+        alert(input);
+        break;
+      case "confirm":
+        vars["confirm"]=confirm(input);
+        break;
+      case "time":
+        alert(new Date().toLocaleTimeString());
+        break;
+      case "date":
+        alert(new Date().toLocaleDateString());
+        break;
+      case "console":
+        alert("Check console for logs.");
+        break;
+      case "variable":
+        const [n,v]=input.split("=");
+        vars[n.trim()]=v.trim();
+        break;
     }
+    i++;
+    await executeNext();
+  }
 
-    function createAutomation() {
-      const name = prompt("Name your automation:");
-      if (!name) return;
-      const code = prompt("Enter JavaScript code to run:");
-      automations.push({ name, code });
-      save();
-    }
+  executeNext();
+}
 
-    function runAutomation(index) {
-      try {
-        eval(automations[index].code);
-        alert("✅ Automation executed successfully!");
-      } catch (e) {
-        alert("❌ Error: " + e.message);
-      }
-    }
+function saveWorkflow(){
+  const blocks=[...workspace.querySelectorAll(".block")].map(b=>({type:b.dataset.type,value:b.querySelector("input")?b.querySelector("input").value:""}));
+  localStorage.setItem("oxyshare_workflow",JSON.stringify(blocks));
+  alert("Workflow saved.");
+}
 
-    function shareAutomation(index) {
-      const data = JSON.stringify(automations[index]);
-      navigator.clipboard.writeText(data);
-      alert("🔗 Copied to clipboard!");
-    }
+function loadWorkflow(){
+  const data=JSON.parse(localStorage.getItem("oxyshare_workflow")||"[]");
+  workspace.innerHTML="";
+  data.forEach(b=>addBlock(b.type,b.value));
+}
 
-    function render() {
-      container.innerHTML = "";
-      automations.forEach((a, i) => {
-        const el = document.createElement("div");
-        el.className = "automation";
-        el.innerHTML = `
-          <strong>${a.name}</strong><br>
-          <small style="opacity:0.6;">${a.code.substring(0,50)}...</small><br>
-          <button onclick="runAutomation(${i})">▶ Run</button>
-          <button onclick="shareAutomation(${i})">📤 Share</button>
-          <button onclick="deleteAutomation(${i})">🗑 Delete</button>
-        `;
-        container.appendChild(el);
-      });
-    }
-
-    function deleteAutomation(i) {
-      if (confirm("Delete this automation?")) {
-        automations.splice(i, 1);
-        save();
-      }
-    }
-
-    render();
-  </script>
+function clearWorkspace(){
+  workspace.innerHTML="";
+}
+</script>
 </body>
 </html>
