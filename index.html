@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oxyshare — Automation Hub</title>
+<style>
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+    background: radial-gradient(circle at top, #0a0a0a 0%, #050505 100%);
+    color: #fff;
+    overflow-x: hidden;
+  }
+
+  .app-container {
+    max-width: 420px;
+    margin: 40px auto;
+    border-radius: 40px;
+    background: rgba(30, 30, 30, 0.8);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 0 20px rgba(255,255,255,0.05);
+    padding: 20px;
+    animation: fadeIn 1s ease;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 2em;
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+    background: linear-gradient(to right, #0ff, #0af);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  button {
+    background: linear-gradient(135deg, #0ff, #0af);
+    border: none;
+    color: white;
+    padding: 14px 20px;
+    font-size: 16px;
+    border-radius: 16px;
+    margin: 10px 0;
+    width: 100%;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  button:hover {
+    transform: scale(1.03);
+    box-shadow: 0 0 15px #0af5;
+  }
+
+  .automation {
+    background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 15px;
+    margin: 10px 0;
+  }
+
+  input, textarea {
+    width: 100%;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 14px;
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    outline: none;
+  }
+
+  .footer {
+    text-align: center;
+    opacity: 0.6;
+    font-size: 0.8em;
+    margin-top: 20px;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+  <div class="app-container">
+    <h1>Oxyshare</h1>
+    <p style="text-align:center;opacity:0.8;">Create • Share • Run Automations</p>
+
+    <div id="automations"></div>
+
+    <button onclick="createAutomation()">➕ Create Automation</button>
+
+    <div class="footer">© 2025 Oxysoft</div>
+  </div>
+
+  <script>
+    const container = document.getElementById("automations");
+    let automations = JSON.parse(localStorage.getItem("oxy_automations") || "[]");
+
+    function save() {
+      localStorage.setItem("oxy_automations", JSON.stringify(automations));
+      render();
+    }
+
+    function createAutomation() {
+      const name = prompt("Name your automation:");
+      if (!name) return;
+      const code = prompt("Enter JavaScript code to run:");
+      automations.push({ name, code });
+      save();
+    }
+
+    function runAutomation(index) {
+      try {
+        eval(automations[index].code);
+        alert("✅ Automation executed successfully!");
+      } catch (e) {
+        alert("❌ Error: " + e.message);
+      }
+    }
+
+    function shareAutomation(index) {
+      const data = JSON.stringify(automations[index]);
+      navigator.clipboard.writeText(data);
+      alert("🔗 Copied to clipboard!");
+    }
+
+    function render() {
+      container.innerHTML = "";
+      automations.forEach((a, i) => {
+        const el = document.createElement("div");
+        el.className = "automation";
+        el.innerHTML = `
+          <strong>${a.name}</strong><br>
+          <small style="opacity:0.6;">${a.code.substring(0,50)}...</small><br>
+          <button onclick="runAutomation(${i})">▶ Run</button>
+          <button onclick="shareAutomation(${i})">📤 Share</button>
+          <button onclick="deleteAutomation(${i})">🗑 Delete</button>
+        `;
+        container.appendChild(el);
+      });
+    }
+
+    function deleteAutomation(i) {
+      if (confirm("Delete this automation?")) {
+        automations.splice(i, 1);
+        save();
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
