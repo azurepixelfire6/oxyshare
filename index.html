@@ -2,280 +2,167 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Oxyshare — Automation Builder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0b0b0b">
+<title>Oxyshare</title>
 <style>
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: translateY(0);} }
   body {
-    margin: 0;
-    background: #0a0a0a;
-    color: #fff;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
-    display: flex;
-    flex-direction: row;
-    height: 100vh;
-    overflow: hidden;
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    background: #0b0b0b; color: #fff; height: 100vh; overflow: hidden;
   }
-  .sidebar {
-    width: 260px;
-    background: #111;
-    border-right: 1px solid #222;
-    padding: 20px;
-    overflow-y: auto;
+  header {
+    text-align: center; font-size: 1.4em; padding: 1rem; backdrop-filter: blur(20px);
+    background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);
   }
-  .sidebar h2 {
-    font-size: 1.3em;
-    color: #00baff;
-    margin-bottom: 15px;
+  #main {
+    display: flex; flex-direction: column; height: calc(100vh - 60px);
+    overflow-y: auto; animation: fadeIn .4s ease;
   }
-  .block-template {
-    background: #1c1c1c;
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    cursor: grab;
-    transition: 0.2s;
-    user-select: none;
+  .menu { display: flex; justify-content: space-around; padding: .8rem; border-top: 1px solid rgba(255,255,255,0.1);
+           backdrop-filter: blur(20px); position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.6);}
+  .menu button {
+    background: none; border: none; color: white; font-size: 1em; font-weight: 500;
+    transition: 0.3s; padding: 0.5rem 1rem; border-radius: 12px;
   }
-  .block-template:hover {
-    background: #242424;
-  }
-  .workspace {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
+  .menu button.active, .menu button:hover { background: rgba(255,255,255,0.15);}
+  .section { display: none; padding: 1rem;}
+  .section.active { display: block; animation: fadeIn .4s ease;}
+  .card {
+    background: rgba(255,255,255,0.06); border-radius: 20px; padding: 1rem; margin: .5rem 0;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
   }
   .block {
-    background: #1b1b1b;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    padding: 10px;
-    transition: 0.2s;
+    background: rgba(255,255,255,0.08); padding: .8rem; border-radius: 14px; margin: .5rem 0;
+    border-left: 4px solid #007aff; cursor: grab; transition: 0.2s;
   }
-  .block input, .block select {
-    background: #111;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    padding: 6px;
-    margin-left: 5px;
-    width: 60%;
+  .block:hover { background: rgba(255,255,255,0.12);}
+  input, textarea {
+    width: 100%; border: none; border-radius: 12px; padding: .6rem;
+    background: rgba(255,255,255,0.08); color: white; margin-top: .4rem;
   }
-  .header {
-    position: absolute;
-    top: 0;
-    width: 100%;
-    height: 50px;
-    background: #0d0d0d;
-    border-bottom: 1px solid #222;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
+  .button {
+    background: #007aff; border: none; color: white; font-weight: 600; padding: .7rem 1rem;
+    border-radius: 14px; width: 100%; margin-top: .8rem;
   }
-  .header button {
-    background: #00baff;
-    border: none;
-    border-radius: 10px;
-    color: white;
-    font-weight: 600;
-    padding: 8px 14px;
-    cursor: pointer;
-    transition: 0.2s;
-  }
-  .header button:hover {
-    opacity: 0.9;
-  }
-  .main {
-    display: flex;
-    flex-direction: row;
-    width: 100%;
-    margin-top: 50px;
+  #uploadLabel {
+    display: block; border: 2px dashed rgba(255,255,255,0.3); padding: 2rem; border-radius: 16px; text-align: center;
   }
 </style>
 </head>
 <body>
-  <div class="header">
-    <div>Oxyshare — Automation Builder</div>
-    <div>
-      <button onclick="runAutomation()">Run</button>
-      <button onclick="saveWorkflow()">Save</button>
-      <button onclick="loadWorkflow()">Load</button>
-      <button onclick="clearWorkspace()">Clear</button>
+<header>Oxyshare</header>
+
+<div id="main">
+  <div id="apps" class="section active">
+    <h2>My Apps</h2>
+    <div id="appList"></div>
+    <button class="button" onclick="showSection('create')">+ New App</button>
+  </div>
+
+  <div id="create" class="section">
+    <h2>Create App</h2>
+    <div class="card">
+      <h3>Option 1: Build with Blocks</h3>
+      <div id="blockArea"></div>
+      <button class="button" onclick="addBlock()">+ Add Block</button>
+      <button class="button" onclick="saveApp()">Save App</button>
+    </div>
+
+    <div class="card">
+      <h3>Option 2: Upload HTML App</h3>
+      <label id="uploadLabel">
+        Upload your index.html
+        <input type="file" id="htmlUpload" accept=".html" style="display:none">
+      </label>
     </div>
   </div>
 
-  <div class="main">
-    <div class="sidebar">
-      <h2>Actions</h2>
-      <div id="templates"></div>
-    </div>
-
-    <div class="workspace" id="workspace">
-    </div>
+  <div id="explore" class="section">
+    <h2>Explore</h2>
+    <p style="opacity:.7;">Community sharing coming soon.</p>
   </div>
+</div>
+
+<div class="menu">
+  <button id="menu-apps" class="active" onclick="showSection('apps')">Apps</button>
+  <button id="menu-create" onclick="showSection('create')">Create</button>
+  <button id="menu-explore" onclick="showSection('explore')">Explore</button>
+</div>
 
 <script>
-const blockList = [
-  {type:"click", label:"Click screen [times]"},
-  {type:"notify", label:"Show notification [text]"},
-  {type:"wait", label:"Wait [seconds]"},
-  {type:"log", label:"Log text [text]"},
-  {type:"openurl", label:"Open URL [url]"},
-  {type:"download", label:"Download [url]"},
-  {type:"upload", label:"Upload file (saved as variable)"},
-  {type:"if", label:"If condition [text]"},
-  {type:"else", label:"Else"},
-  {type:"loop", label:"Repeat [times]"},
-  {type:"input", label:"Ask for input [prompt]"},
-  {type:"sound", label:"Play beep sound"},
-  {type:"vibrate", label:"Vibrate device [ms]"},
-  {type:"bgcolor", label:"Change background [color]"},
-  {type:"alert", label:"Show alert [text]"},
-  {type:"confirm", label:"Ask confirm [text]"},
-  {type:"time", label:"Show current time"},
-  {type:"date", label:"Show current date"},
-  {type:"console", label:"Open console log"},
-  {type:"variable", label:"Set variable [name]=[value]"}
+const blockTypes = [
+  "Click screen [x] times", "Show notification [text]", "Download [file]",
+  "Wait [seconds]", "Open URL [link]", "Vibrate [duration]",
+  "Alert [message]", "Prompt input [label]", "If [condition] then [action]",
+  "Loop [times]", "Play sound [file]", "Change background [color]",
+  "Set variable [name=value]", "Log [text]", "Get time",
+  "Ask permission [type]", "Send message [text]", "Show alert [text]",
+  "Run automation [name]", "Stop automation"
 ];
 
-const templates = document.getElementById("templates");
-const workspace = document.getElementById("workspace");
+function showSection(name){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelector(`#${name}`).classList.add('active');
+  document.querySelectorAll('.menu button').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`#menu-${name}`).classList.add('active');
+}
 
-blockList.forEach(b=>{
-  const el=document.createElement("div");
-  el.className="block-template";
-  el.textContent=b.label;
-  el.draggable=true;
-  el.dataset.type=b.type;
-  el.ondragstart=e=>e.dataTransfer.setData("type", b.type);
-  templates.appendChild(el);
+function addBlock(){
+  const blockArea=document.getElementById('blockArea');
+  const div=document.createElement('div');
+  div.className='block';
+  div.textContent=blockTypes[Math.floor(Math.random()*blockTypes.length)];
+  blockArea.appendChild(div);
+}
+
+function saveApp(){
+  const name=prompt("App name:");
+  if(!name)return;
+  const blocks=[...document.querySelectorAll('.block')].map(b=>b.textContent);
+  const apps=JSON.parse(localStorage.getItem('oxy_apps')||'[]');
+  apps.push({name, blocks});
+  localStorage.setItem('oxy_apps', JSON.stringify(apps));
+  updateAppList();
+  showSection('apps');
+}
+
+function updateAppList(){
+  const list=document.getElementById('appList');
+  list.innerHTML='';
+  const apps=JSON.parse(localStorage.getItem('oxy_apps')||'[]');
+  apps.forEach(app=>{
+    const div=document.createElement('div');
+    div.className='card';
+    div.innerHTML=`<strong>${app.name}</strong><br><small>${app.blocks.length} blocks</small><br><button class='button' style='margin-top:.5rem' onclick='runApp("${app.name}")'>Run</button>`;
+    list.appendChild(div);
+  });
+}
+
+function runApp(name){
+  const apps=JSON.parse(localStorage.getItem('oxy_apps')||'[]');
+  const app=apps.find(a=>a.name===name);
+  if(!app)return alert("App not found");
+  alert("Running "+name+"...\nActions:\n"+app.blocks.join('\n'));
+}
+
+document.getElementById('htmlUpload').addEventListener('change', e=>{
+  const file=e.target.files[0];
+  if(file){
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const name=prompt("App name:");
+      const apps=JSON.parse(localStorage.getItem('oxy_apps')||'[]');
+      apps.push({name, html: reader.result});
+      localStorage.setItem('oxy_apps', JSON.stringify(apps));
+      updateAppList();
+      showSection('apps');
+    };
+    reader.readAsText(file);
+  }
 });
 
-workspace.ondragover=e=>e.preventDefault();
-workspace.ondrop=e=>{
-  e.preventDefault();
-  const type=e.dataTransfer.getData("type");
-  addBlock(type);
-};
-
-function addBlock(type,val="") {
-  const def = blockList.find(b=>b.type===type);
-  const div=document.createElement("div");
-  div.className="block";
-  div.dataset.type=type;
-  const input = `<input type="text" value="${val}">`;
-  div.innerHTML = def.label.replace("[text]", input).replace("[times]", input).replace("[seconds]", input).replace("[url]", input).replace("[color]", input).replace("[name]", input).replace("[value]", input).replace("[prompt]", input).replace("[ms]", input);
-  workspace.appendChild(div);
-}
-
-function runAutomation() {
-  const blocks = workspace.querySelectorAll(".block");
-  let vars = {};
-  let i=0;
-
-  async function executeNext() {
-    if (i >= blocks.length) return;
-    const block = blocks[i];
-    const type = block.dataset.type;
-    const input = block.querySelector("input") ? block.querySelector("input").value : "";
-    switch(type){
-      case "click":
-        for(let j=0;j<(parseInt(input)||1);j++){ document.body.click(); }
-        break;
-      case "notify":
-        if (Notification.permission === "granted") new Notification(input);
-        else alert(input);
-        break;
-      case "wait":
-        await new Promise(r=>setTimeout(r,(parseFloat(input)||1)*1000));
-        break;
-      case "log":
-        console.log(input);
-        break;
-      case "openurl":
-        window.open(input, "_blank");
-        break;
-      case "download":
-        const a=document.createElement("a");
-        a.href=input;
-        a.download="file";
-        a.click();
-        break;
-      case "upload":
-        alert("Upload placeholder (variable saved)");
-        break;
-      case "if":
-        if(!eval(input)) while(blocks[++i] && blocks[i].dataset.type!=="else"){}
-        break;
-      case "else":
-        while(blocks[++i] && blocks[i].dataset.type!=="endif"){}
-        break;
-      case "loop":
-        let times=parseInt(input)||1;
-        const savedI=i;
-        for(let j=0;j<times;j++){
-          i=savedI;
-          await executeNext();
-        }
-        break;
-      case "input":
-        vars["input"]=prompt(input||"Enter value:");
-        break;
-      case "sound":
-        const ctx=new (window.AudioContext||window.webkitAudioContext)();
-        const osc=ctx.createOscillator();
-        osc.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime+0.2);
-        break;
-      case "vibrate":
-        navigator.vibrate(parseInt(input)||200);
-        break;
-      case "bgcolor":
-        document.body.style.background=input;
-        break;
-      case "alert":
-        alert(input);
-        break;
-      case "confirm":
-        vars["confirm"]=confirm(input);
-        break;
-      case "time":
-        alert(new Date().toLocaleTimeString());
-        break;
-      case "date":
-        alert(new Date().toLocaleDateString());
-        break;
-      case "console":
-        alert("Check console for logs.");
-        break;
-      case "variable":
-        const [n,v]=input.split("=");
-        vars[n.trim()]=v.trim();
-        break;
-    }
-    i++;
-    await executeNext();
-  }
-
-  executeNext();
-}
-
-function saveWorkflow(){
-  const blocks=[...workspace.querySelectorAll(".block")].map(b=>({type:b.dataset.type,value:b.querySelector("input")?b.querySelector("input").value:""}));
-  localStorage.setItem("oxyshare_workflow",JSON.stringify(blocks));
-  alert("Workflow saved.");
-}
-
-function loadWorkflow(){
-  const data=JSON.parse(localStorage.getItem("oxyshare_workflow")||"[]");
-  workspace.innerHTML="";
-  data.forEach(b=>addBlock(b.type,b.value));
-}
-
-function clearWorkspace(){
-  workspace.innerHTML="";
-}
+updateAppList();
 </script>
 </body>
 </html>
